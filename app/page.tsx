@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   ArrowLeft,
   Check,
@@ -44,6 +45,7 @@ type Product = {
   description: string;
   variants: { label: string; color: string; image: string }[];
   visualKind?: string;
+  image?: string;
 };
 
 type CartItem = {
@@ -86,67 +88,67 @@ const PRODUCTS: Product[] = [
   makeProduct("core-pace", "Corre Pace", 18490, 19990, "Corrida", "Um parceiro leve para acompanhar seu ritmo, com cabedal respirável e conforto para os treinos do dia a dia.", [
     { label: "Branco / Azul", color: "#f5f2e9", image: "tenis-corre-pace.webp" },
   ]),
-  makeProduct("core-4", "Corre 4 50 Anos", 8190, 23990, "Corrida", "Edição comemorativa de 50 anos com visual marcante, ajuste confortável e sola para acompanhar sua rotina.", [
+  makeProduct("core-4", "Corre 4 50 Anos", 8190, 5990, "Corrida", "Edição comemorativa de 50 anos com visual marcante, ajuste confortável e sola para acompanhar sua rotina.", [
     { label: "Marinho / Areia · 50 anos", color: "#172d4d", image: "corre-4-50-anos-azul.webp" },
     { label: "Off-white", color: "#eee9dc", image: "corre-4/off-white.webp" },
     { label: "Preto / Creme", color: "#242426", image: "corre-4/preto-creme.webp" },
     { label: "Cinza / Oliva", color: "#8a8c7e", image: "corre-4/cinza-oliva.webp" },
   ]),
-  makeProduct("supra-2", "Corre Supra 2", 15190, 27990, "Performance", "Amortecimento confortável e construção respirável para corridas, academia e movimento urbano.", [
+  makeProduct("supra-2", "Corre Supra 2", 15190, 12990, "Performance", "Amortecimento confortável e construção respirável para corridas, academia e movimento urbano.", [
     { label: "Preto / Grafite", color: "#303236", image: "supra-2.webp" },
     { label: "Azul / Lima", color: "#2a64bb", image: "supra-2/azul-lima.webp" },
     { label: "Preto / Lima", color: "#23272c", image: "supra-2/preto-lima.webp" },
     { label: "Creme / Lima", color: "#d9d5c6", image: "supra-2/creme-lima.webp" },
   ]),
-  makeProduct("trilha-2", "Corre Trilha 2", 8190, 24990, "Trilha", "Aderência e conforto para explorar novos caminhos, com sola preparada para acompanhar você fora do asfalto.", [
+  makeProduct("trilha-2", "Corre Trilha 2", 8190, 5990, "Trilha", "Aderência e conforto para explorar novos caminhos, com sola preparada para acompanhar você fora do asfalto.", [
     { label: "Areia / Oliva", color: "#788064", image: "tenis-corre-trilha-2.webp" },
     { label: "Azul Petróleo", color: "#275469", image: "corre-trilha-2/azul-petroleo.webp" },
     { label: "Oliva / Preto", color: "#555b43", image: "corre-trilha-2/oliva-preto.webp" },
     { label: "Preto", color: "#242426", image: "corre-trilha-2/preto-total.webp" },
   ]),
-  makeProduct("grafeno-3", "Corre Grafeno 3", 10190, 29990, "Performance", "Um modelo de corrida com design dinâmico e diferentes combinações de cores para os seus treinos.", [
+  makeProduct("grafeno-3", "Corre Grafeno 3", 10190, 7990, "Performance", "Um modelo de corrida com design dinâmico e diferentes combinações de cores para os seus treinos.", [
     { label: "Grafite / Branco", color: "#4a4e50", image: "grafeno-3.webp" },
     { label: "Azul / Turquesa", color: "#2088a1", image: "grafeno-3/azul-turquesa.webp" },
     { label: "Limão / Preto", color: "#a1bd24", image: "grafeno-3/limao-preto.webp" },
     { label: "Roxo / Preto", color: "#5b4a7a", image: "grafeno-3/roxo-preto.webp" },
   ]),
-  makeProduct("corre-max", "Corre Max", 7590, 22990, "Corrida", "Conforto para seguir em movimento, em um visual versátil para seus treinos e para o dia a dia.", [
+  makeProduct("corre-max", "Corre Max", 7590, 5490, "Corrida", "Conforto para seguir em movimento, em um visual versátil para seus treinos e para o dia a dia.", [
     { label: "Preto / Carvão", color: "#292b2d", image: "corre-max/preto-carvao.webp" },
     { label: "Branco Gelo", color: "#ecebe7", image: "corre-max/branco-gelo.webp" },
     { label: "Verde Oliva", color: "#747a50", image: "corre-max/verde-oliva.webp" },
     { label: "Areia / Turquesa", color: "#c8b49b", image: "corre-max/areia-turquesa.webp" },
   ]),
-  makeProduct("corre-5", "Corre 5", 8190, 22990, "Corrida", "Leve e confortável para acompanhar diferentes ritmos, do treino diário à sua próxima corrida.", [
+  makeProduct("corre-5", "Corre 5", 8190, 5990, "Corrida", "Leve e confortável para acompanhar diferentes ritmos, do treino diário à sua próxima corrida.", [
     { label: "Branco", color: "#f1eee8", image: "corre-5-branco.webp" },
     { label: "Preto / Neon", color: "#292b2d", image: "corre-5-preto-neon.webp" },
     { label: "Cinza / Bege", color: "#a7a49b", image: "corre-5/cinza-bege.webp" },
     { label: "Verde Oliva", color: "#747a50", image: "corre-5/verde-oliva.webp" },
   ]),
-  makeProduct("corre-vento-3", "Corre Vento 3", 6990, 19990, "Corrida", "Um tênis leve com opções de cores vibrantes para colocar mais movimento nos seus quilômetros.", [
+  makeProduct("corre-vento-3", "Corre Vento 3", 6990, 4990, "Corrida", "Um tênis leve com opções de cores vibrantes para colocar mais movimento nos seus quilômetros.", [
     { label: "Azul", color: "#2453a6", image: "corre-vento-3-azul.webp" },
     { label: "Bege", color: "#d4c8ab", image: "corre-vento-3-bege.webp" },
     { label: "Branco", color: "#f1eee8", image: "corre-vento-3-branco.webp" },
     { label: "Laranja", color: "#e97722", image: "corre-vento-3-laranja.webp" },
   ]),
-  makeProduct("corre-trilha-3", "Corre Trilha 3", 8190, 22990, "Trilha", "Feito para explorar caminhos com conforto e firmeza em diferentes terrenos.", [
+  makeProduct("corre-trilha-3", "Corre Trilha 3", 8190, 5990, "Trilha", "Feito para explorar caminhos com conforto e firmeza em diferentes terrenos.", [
     { label: "Bege", color: "#cfc2a7", image: "corre-trilha-3-bege.webp" },
     { label: "Preto", color: "#242426", image: "corre-trilha-3-preto.webp" },
     { label: "Amarelo / Petróleo", color: "#c3a726", image: "corre-trilha-3/amarelo-petroleo.webp" },
     { label: "Oliva / Areia", color: "#777a55", image: "corre-trilha-3/oliva-areia.webp" },
   ]),
-  makeProduct("corre-max-2", "Corre Max 2", 8190, 22990, "Corrida", "Amortecimento macio e combinações atuais para os seus treinos e caminhadas.", [
+  makeProduct("corre-max-2", "Corre Max 2", 8190, 5990, "Corrida", "Amortecimento macio e combinações atuais para os seus treinos e caminhadas.", [
     { label: "Bege / Oliva", color: "#b9aa8c", image: "corre-max-2/bege-oliva.webp" },
     { label: "Creme / Bege", color: "#d4cbbb", image: "corre-max-2/creme-bege.webp" },
     { label: "Lilás", color: "#a58cb5", image: "corre-max-2/lilas.webp" },
     { label: "Preto", color: "#242426", image: "corre-max-2/preto.webp" },
   ]),
-  makeProduct("corre-turbo", "Corre Turbo", 9190, 24990, "Performance", "Design esportivo e visual marcante para manter você em movimento.", [
+  makeProduct("corre-turbo", "Corre Turbo", 9190, 6990, "Performance", "Design esportivo e visual marcante para manter você em movimento.", [
     { label: "Azul Royal", color: "#254ab0", image: "corre-turbo/azul-royal.webp" },
     { label: "Preto / Lima", color: "#292b2d", image: "corre-turbo/preto-limao.webp" },
     { label: "Creme / Coral", color: "#d8cdbc", image: "corre-turbo/creme-coral-menta.webp" },
     { label: "Areia / Azul Royal", color: "#c8b49b", image: "corre-turbo/areia-azul-royal.webp" },
   ]),
-  makeProduct("corre-nuvem", "Corre Nuvem", 6190, 16990, "Corrida", "Leveza e suavidade para caminhar, treinar e curtir cada passo do seu dia.", [
+  makeProduct("corre-nuvem", "Corre Nuvem", 6190, 3990, "Corrida", "Leveza e suavidade para caminhar, treinar e curtir cada passo do seu dia.", [
     { label: "Azul Marinho", color: "#193c89", image: "corre-nuvem/azul-marinho.webp" },
     { label: "Azul Claro", color: "#84a9dc", image: "corre-nuvem/azul-claro.webp" },
     { label: "Areia / Coral", color: "#d1b9a2", image: "corre-nuvem/areia-coral.webp" },
@@ -154,8 +156,8 @@ const PRODUCTS: Product[] = [
   ]),
 ];
 
-const UPSELLS = [
-  { name: "Jaqueta Corre 51 Anos", price: 42990, compareAt: 69990, kind: "jacket" },
+const UPSELLS: { name: string; price: number; compareAt: number; kind: string; image?: string }[] = [
+  { name: "Jaqueta Corre 51 Anos", price: 42990, compareAt: 69990, kind: "jacket", image: "jaqueta-brasil.jpg" },
   { name: "Camiseta Corre Essencial", price: 11990, compareAt: 22990, kind: "shirt" },
   { name: "Shorts Run 51", price: 13990, compareAt: 26990, kind: "shorts" },
   { name: "Corta-vento Corre", price: 36990, compareAt: 59990, kind: "jacket" },
@@ -192,6 +194,13 @@ function Brand() {
 
 function ProductVisual({ product, large = false, imageIndex = 0 }: { product: Product; large?: boolean; imageIndex?: number }) {
   const variant = product.variants[imageIndex % product.variants.length] ?? product.variants[0];
+  if (product.image) {
+    return (
+      <div className={`product-visual ${large ? "product-visual-large" : ""}`}>
+        <Image src={`/olympikus/${product.image}`} alt={product.name} width={447} height={447} />
+      </div>
+    );
+  }
   if (product.visualKind) {
     return <div className={`product-visual ${large ? "product-visual-large" : ""}`}><OutfitVisual kind={product.visualKind} /></div>;
   }
@@ -758,7 +767,7 @@ export default function Home() {
             <div className="checkout-form-column">
               {checkoutStep === 1 && <section className="checkout-form"><h1>Quem vai receber?</h1><p className="form-intro">Informe os dados para gerar o Pix e identificar seu pedido.</p><label>Nome completo<input name="name" autoComplete="name" value={form.name} onChange={updateForm} placeholder="Seu nome completo" /></label><label>E-mail<input type="email" name="email" autoComplete="email" value={form.email} onChange={updateForm} placeholder="voce@email.com" /></label><div className="form-two-cols"><label>CPF<input name="cpf" inputMode="numeric" maxLength={14} value={form.cpf} onChange={updateForm} placeholder="000.000.000-00" /></label><label>Celular<input name="phone" inputMode="tel" maxLength={15} value={form.phone} onChange={updateForm} placeholder="(11) 98765-4321" /></label></div><p className="privacy-hint">Seus dados são usados para processar o pagamento e a entrega do pedido.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromIdentity}>CONTINUAR <ChevronRight size={17} /></button></section>}
               {checkoutStep === 2 && <section className="checkout-form"><h1>Onde entregamos?</h1><p className="form-intro">Digite o CEP e complete o endereço.</p><label>CEP<div className="cep-input"><input aria-label="CEP" inputMode="numeric" maxLength={9} value={cep} onChange={(event) => { setCep(event.currentTarget.value); setCepFound(false); }} placeholder="00000-000" /><button type="button" disabled={cepLoading} onClick={() => void lookupCep()}>{cepLoading ? "Buscando…" : "Buscar CEP"}</button></div></label>{cepFound && <div className="cep-success"><Check size={15} /> Endereço localizado</div>}<label>Rua / avenida<input name="street" value={form.street} onChange={updateForm} placeholder="Nome da rua" /></label><div className="form-two-cols"><label>Número<input name="number" value={form.number} onChange={updateForm} placeholder="Número" /></label><label>Complemento<input name="complement" value={form.complement} onChange={updateForm} placeholder="Apto, bloco" /></label></div><label>Bairro<input name="neighborhood" value={form.neighborhood} onChange={updateForm} placeholder="Bairro" /></label><div className="form-two-cols"><label>Cidade<input name="city" value={form.city} onChange={updateForm} placeholder="Cidade" /></label><label>UF<input name="state" maxLength={2} value={form.state} onChange={updateForm} placeholder="SP" /></label></div><fieldset className="shipping-options"><legend>ESCOLHA O FRETE</legend>{SHIPPING.map((option) => <label className={`shipping-option ${shipping === option.id ? "shipping-selected" : ""}`} key={option.id}><input type="radio" name="shipping" value={option.id} checked={shipping === option.id} onChange={() => chooseShipping(option.id)} /><span className="shipping-logo"><Truck size={19} /></span><span className="shipping-copy"><b>{option.title}</b><small>{option.detail}</small></span><strong>{option.price === 0 ? "Grátis" : brl(option.price)}</strong></label>)}</fieldset>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromDelivery}>CONTINUAR <ChevronRight size={17} /></button></section>}
-              {checkoutStep === 3 && !payment && <section className="checkout-form payment-step"><div className="upsell-heading"><Sparkles size={17} /><b>OFERTA EXCLUSIVA DA COLEÇÃO</b><span>{upsellIndex + 1}/9</span></div><div className="upsell-card"><button className="upsell-arrow" type="button" aria-label="Oferta anterior" onClick={() => setUpsellIndex((upsellIndex + 8) % 9)}><ChevronLeft size={19} /></button><OutfitVisual kind={currentUpsell.kind} /><div className="upsell-copy"><span>COLEÇÃO 51 ANOS</span><strong>{currentUpsell.name}</strong><div><b>{brl(Math.round(currentUpsell.price * 0.15))}</b><del>{brl(currentUpsell.compareAt)}</del><i>-85%</i></div></div><button className="upsell-arrow" type="button" aria-label="Próxima oferta" onClick={() => setUpsellIndex((upsellIndex + 1) % 9)}><ChevronRight size={19} /></button><div className="upsell-size"><b>TAMANHO</b><div>{[33, 34, 35, 36, 37, 38, 39].map((size) => <button key={size} className={upsellSize === size ? "selected" : ""} type="button" onClick={() => setUpsellSize(size)}>{size}</button>)}</div></div><button className="button button-soft button-full" type="button" onClick={() => { const offer: Product = { id: `upsell-${upsellIndex}`, name: currentUpsell.name, price: Math.round(currentUpsell.price * 0.15), compareAt: currentUpsell.compareAt, color: "#2039cc", colorLabel: "Azul", category: "Coleção 51 Anos", index: 1, description: currentUpsell.name, variants: [{ label: "Azul", color: "#2039cc", image: "" }], visualKind: currentUpsell.kind }; addToCart(offer, upsellSize, true); }}>+ ADICIONAR AO PEDIDO</button></div>{couponWon && <div className="applied-coupon"><Check size={15} /> Cupom CORRE51 aplicado</div>}<hr /><h1>Pagamento via Pix</h1><p className="form-intro">Gere o código Pix para pagar no aplicativo do seu banco.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" disabled={paymentLoading} onClick={() => void createPixPayment()}>{paymentLoading ? "GERANDO PIX…" : `GERAR PIX · ${brl(total)}`} <ChevronRight size={17} /></button><p className="privacy-hint">A cobrança será criada somente após confirmar os dados e o valor do pedido.</p></section>}
+              {checkoutStep === 3 && !payment && <section className="checkout-form payment-step"><div className="upsell-heading"><Sparkles size={17} /><b>OFERTA EXCLUSIVA DA COLEÇÃO</b><span>{upsellIndex + 1}/9</span></div><div className="upsell-card"><button className="upsell-arrow" type="button" aria-label="Oferta anterior" onClick={() => setUpsellIndex((upsellIndex + 8) % 9)}><ChevronLeft size={19} /></button>{currentUpsell.image ? <div className="upsell-product-photo"><Image src={`/olympikus/${currentUpsell.image}`} alt={currentUpsell.name} width={447} height={447} sizes="68px" /></div> : <OutfitVisual kind={currentUpsell.kind} />}<div className="upsell-copy"><span>COLEÇÃO 51 ANOS</span><strong>{currentUpsell.name}</strong><div><b>{brl(Math.round(currentUpsell.price * 0.15))}</b><del>{brl(currentUpsell.compareAt)}</del><i>-85%</i></div></div><button className="upsell-arrow" type="button" aria-label="Próxima oferta" onClick={() => setUpsellIndex((upsellIndex + 1) % 9)}><ChevronRight size={19} /></button><div className="upsell-size"><b>TAMANHO</b><div>{[33, 34, 35, 36, 37, 38, 39].map((size) => <button key={size} className={upsellSize === size ? "selected" : ""} type="button" onClick={() => setUpsellSize(size)}>{size}</button>)}</div></div><button className="button button-soft button-full" type="button" onClick={() => { const offer: Product = { id: `upsell-${upsellIndex}`, name: currentUpsell.name, price: Math.round(currentUpsell.price * 0.15), compareAt: currentUpsell.compareAt, color: "#2039cc", colorLabel: "Azul", category: "Coleção 51 Anos", index: 1, description: currentUpsell.name, variants: [{ label: "Azul", color: "#2039cc", image: "" }], visualKind: currentUpsell.kind, image: currentUpsell.image }; addToCart(offer, upsellSize, true); }}>+ ADICIONAR AO PEDIDO</button></div>{couponWon && <div className="applied-coupon"><Check size={15} /> Cupom CORRE51 aplicado</div>}<hr /><h1>Pagamento via Pix</h1><p className="form-intro">Gere o código Pix para pagar no aplicativo do seu banco.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" disabled={paymentLoading} onClick={() => void createPixPayment()}>{paymentLoading ? "GERANDO PIX…" : `GERAR PIX · ${brl(total)}`} <ChevronRight size={17} /></button><p className="privacy-hint">A cobrança será criada somente após confirmar os dados e o valor do pedido.</p></section>}
               {checkoutStep === 3 && payment && <section className="pix-payment-card"><span className="eyebrow">PAGUE COM PIX</span><strong className="pix-total">{brl(payment.amount)}</strong>{payment.qrCodeImage ? <img className="pix-qr-image" src={payment.qrCodeImage} alt="QR Code Pix do pedido" /> : <div className="pix-qr-unavailable">Use o código Pix copia e cola abaixo para concluir o pagamento.</div>}<p className={`pix-status ${paymentStatus === "failed" ? "pix-status-error" : ""}`}><span />{paymentStatus === "failed" ? "Este Pix expirou ou foi cancelado. Gere um novo código para tentar novamente." : "Aguardando a confirmação do pagamento…"}</p>{payment.expiresAt && <p className="pix-expiry">Válido até {payment.expiresAt}</p>}<label className="pix-code-label" htmlFor="pix-copy-code">CÓDIGO PIX · COPIA E COLA</label><textarea id="pix-copy-code" className="pix-code" readOnly value={payment.qrCode} /><button className="button button-black button-full" type="button" onClick={() => void copyPixCode()}><Copy size={16} /> COPIAR CÓDIGO PIX</button>{paymentStatus === "failed" && <button className="button button-outline button-full retry-pix" type="button" disabled={paymentLoading} onClick={() => void createPixPayment()}>{paymentLoading ? "GERANDO…" : "GERAR NOVO PIX"}</button>}<p className="privacy-hint">O pedido avança para preparação após a confirmação do pagamento.</p></section>}
             </div>
             <aside className="order-summary"><span className="eyebrow">RESUMO ({totalItems} {totalItems === 1 ? "ITEM" : "ITENS"})</span>{cart.map((item) => <div className="summary-item" key={item.product.id + item.size}><ProductVisual product={item.product} /><div><b>{item.product.name}</b><small>{item.product.colorLabel} · Tam. {item.size} · {item.quantity}x</small></div><strong>{brl(item.product.price * item.quantity)}</strong></div>)}<div className="summary-line"><span>Subtotal</span><b>{brl(subtotal)}</b></div><div className="summary-line"><span><Truck size={15} /> Frete</span><b className={shippingPrice === 0 ? "price-free" : ""}>{checkoutStep === 1 ? "a calcular" : shippingPrice === 0 ? "Grátis" : brl(shippingPrice)}</b></div><div className="summary-line summary-grand"><span>Total</span><strong>{brl(checkoutStep === 1 ? subtotal : total)}</strong></div></aside>
