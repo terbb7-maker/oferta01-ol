@@ -22,6 +22,7 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { trackTikTokEvent } from "@/lib/tiktok";
 import {
   type ChangeEvent,
   type PointerEvent as ReactPointerEvent,
@@ -49,6 +50,15 @@ type CartItem = {
   product: Product;
   size: number;
   quantity: number;
+};
+
+type PixPayment = {
+  transactionId: string;
+  reference: string;
+  qrCode: string;
+  qrCodeImage: string | null;
+  amount: number;
+  expiresAt: string | null;
 };
 
 const makeProduct = (
@@ -325,9 +335,8 @@ function GameModal({
           <div className="modal-content">
             <h2 id="campaign-title">Parabéns! Você ganhou!</h2>
             <p>Uma surpresa de <b>85% de desconto</b> na Coleção Comemorativa 51 Anos.</p>
-            <div className="discount-teaser"><strong>85% OFF</strong><span>Cupom de demonstração: CORRE51</span></div>
+            <div className="discount-teaser"><strong>85% OFF</strong><span>Cupom CORRE51 aplicado na coleção comemorativa</span></div>
             <button className="button button-gold button-full" type="button" onClick={onWin}>VER LINHA 51 ANOS <ShoppingBag size={17} /></button>
-            <p className="demo-note">Prévia interativa. O desconto não é válido para compras reais.</p>
           </div>
         )}
         {screen === "retry" && (
@@ -339,7 +348,7 @@ function GameModal({
             <button className="quiet-link" type="button" onClick={onClose}>Agora não</button>
           </div>
         )}
-        <div className="modal-footnote"><span>DEMONSTRAÇÃO</span><span>Campanha conceitual</span></div>
+        <div className="modal-footnote"><span>OLYMPIKUS 51 ANOS</span><span>Viva o movimento</span></div>
       </section>
     </div>
   );
@@ -350,7 +359,7 @@ function TrustBar() {
     { icon: Truck, title: "Frete Grátis", text: "Para todo o Brasil" },
     { icon: RotateCcw, title: "Troca Grátis", text: "Até 30 dias" },
     { icon: CreditCard, title: "10x Sem Juros", text: "Parcelamento" },
-    { icon: ShieldCheck, title: "Compra Segura", text: "Prévia de demonstração" },
+    { icon: ShieldCheck, title: "Compra Segura", text: "Pagamento Pix protegido" },
   ];
   return <div className="trust-bar"><div className="container trust-inner">{items.map(({ icon: Icon, title, text }) => <div className="trust-item" key={title}><span><Icon size={21} /></span><div><strong>{title}</strong><small>{text}</small></div></div>)}</div></div>;
 }
@@ -375,7 +384,10 @@ export default function Home() {
   const [checkoutStep, setCheckoutStep] = useState(0);
   const [checkoutError, setCheckoutError] = useState("");
   const [shipping, setShipping] = useState(SHIPPING[0].id);
-  const [showPixDemo, setShowPixDemo] = useState(false);
+  const [payment, setPayment] = useState<PixPayment | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "approved" | "failed" | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [cepLoading, setCepLoading] = useState(false);
   const [upsellIndex, setUpsellIndex] = useState(0);
   const [upsellSize, setUpsellSize] = useState(38);
   const [heroSlide, setHeroSlide] = useState(0);
@@ -392,13 +404,57 @@ export default function Home() {
   const currentUpsell = UPSELLS[upsellIndex];
 
   useEffect(() => {
-    if (window.sessionStorage.getItem("olympikus-demo-campaign") === "seen") return;
+    const ttclid = new URLSearchParams(window.location.search).get("ttclid");
+    if (ttclid) window.sessionStorage.setItem("olympikus-ttclid", ttclid.slice(0, 250));
+    if (window.sessionStorage.getItem("olympikus-campaign") === "seen") return;
     const timer = window.setTimeout(() => setCampaignScreen("welcome"), 900);
     return () => window.clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!payment || paymentStatus !== "pending") return;
+    let active = true;
+    let checking = false;
+    const checkStatus = async () => {
+      if (checking || !active) return;
+      checking = true;
+      try {
+        const query = new URLSearchParams({
+          transaction_id: payment.transactionId,
+          reference: payment.reference,
+        });
+        const ttclid = window.sessionStorage.getItem("olympikus-ttclid");
+        if (ttclid) query.set("ttclid", ttclid);
+        const response = await fetch(`/api/flevo/status?${query.toString()}`, { cache: "no-store" });
+        if (!response.ok) return;
+        const result = await response.json() as { status?: string };
+        if (result.status === "approved" && active) {
+          setPaymentStatus("approved");
+          trackTikTokEvent("Purchase", {
+            currency: "BRL",
+            value: Number((payment.amount / 100).toFixed(2)),
+            content_type: "product",
+            contents: [{ content_id: payment.reference, content_type: "product", quantity: 1, price: payment.amount / 100 }],
+          }, payment.reference);
+        } else if (result.status === "failed" && active) {
+          setPaymentStatus("failed");
+        }
+      } catch {
+        // A temporary status lookup failure leaves the Pix screen active and retries.
+      } finally {
+        checking = false;
+      }
+    };
+    void checkStatus();
+    const interval = window.setInterval(checkStatus, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, [payment, paymentStatus]);
+
   const dismissCampaign = () => {
-    window.sessionStorage.setItem("olympikus-demo-campaign", "seen");
+    window.sessionStorage.setItem("olympikus-campaign", "seen");
     setCampaignScreen(null);
   };
 
@@ -420,19 +476,37 @@ export default function Home() {
     setNotice(`${cartProduct.name} adicionado à sacola`);
     window.setTimeout(() => setNotice(""), 2600);
     setCartOpen(true);
+    trackTikTokEvent("AddToCart", {
+      content_type: "product",
+      content_id: product.id,
+      quantity: 1,
+      currency: "BRL",
+      value: Number((cartProduct.price / 100).toFixed(2)),
+      contents: [{ content_id: product.id, content_type: "product", quantity: 1, price: product.price / 100 }],
+    });
   };
 
   const changeQuantity = (productId: string, size: number, delta: number) => {
+    if (delta > 0) {
+      const item = cart.find((cartItem) => cartItem.product.id === productId && cartItem.size === size);
+      if (item) trackTikTokEvent("AddToCart", { content_id: productId, content_type: "product", quantity: delta, currency: "BRL", value: Number((item.product.price * delta / 100).toFixed(2)) });
+    }
     setCart((items) => items
       .map((item) => item.product.id === productId && item.size === size ? { ...item, quantity: item.quantity + delta } : item)
       .filter((item) => item.quantity > 0));
   };
 
   const toggleFavorite = (id: string) => {
+    if (!favorites.includes(id)) trackTikTokEvent("AddToWishlist", { content_id: id, content_type: "product" });
     setFavorites((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]);
   };
 
   const goToShop = () => {
+    if (paymentStatus === "approved") {
+      setPayment(null);
+      setPaymentStatus(null);
+      setCart([]);
+    }
     setSelectedProduct(null);
     setCheckoutStep(0);
     setCartOpen(false);
@@ -446,6 +520,13 @@ export default function Home() {
     setSelectedColor(0);
     setCheckoutStep(0);
     setSearchOpen(false);
+    trackTikTokEvent("ViewContent", {
+      content_id: product.id,
+      content_type: "product",
+      currency: "BRL",
+      value: Number((product.price / 100).toFixed(2)),
+      contents: [{ content_id: product.id, content_type: "product", quantity: 1, price: product.price / 100 }],
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -473,48 +554,125 @@ export default function Home() {
 
   const searchResults = PRODUCTS.filter((product) => product.name.toLowerCase().includes(searchText.toLowerCase()));
   const launchCheckout = () => {
+    const checkoutContents = cart.map(({ product, quantity }) => ({
+      content_id: product.id,
+      content_type: "product",
+      quantity,
+      price: Number((product.price / 100).toFixed(2)),
+    }));
+    trackTikTokEvent("InitiateCheckout", {
+      currency: "BRL",
+      value: Number((subtotal / 100).toFixed(2)),
+      quantity: totalItems,
+      content_id: checkoutContents[0]?.content_id,
+      content_ids: checkoutContents.map((item) => item.content_id),
+      contents: checkoutContents,
+    });
+    setPayment(null);
+    setPaymentStatus(null);
     setCheckoutStep(1);
-    setShowPixDemo(false);
     setCartOpen(false);
     setSelectedProduct(null);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const lookupCep = () => {
-    if (cep.replace(/\D/g, "").length !== 8) {
+  const lookupCep = async () => {
+    const zipcode = cep.replace(/\D/g, "");
+    if (zipcode.length !== 8) {
       setCheckoutError("Digite um CEP com 8 números.");
       return;
     }
     setCheckoutError("");
-    setCepFound(true);
-    setForm((value) => ({ ...value, street: value.street || "Rua Exemplo", neighborhood: value.neighborhood || "Jardim das Flores", city: value.city || "São Paulo", state: value.state || "SP" }));
+    setCepLoading(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${zipcode}/json/`);
+      if (!response.ok) throw new Error("CEP lookup failed");
+      const address = await response.json() as { erro?: boolean; logradouro?: string; bairro?: string; localidade?: string; uf?: string };
+      if (address.erro) {
+        setCheckoutError("CEP não encontrado. Confira o número ou preencha o endereço manualmente.");
+        return;
+      }
+      setForm((value) => ({
+        ...value,
+        street: address.logradouro || value.street,
+        neighborhood: address.bairro || value.neighborhood,
+        city: address.localidade || value.city,
+        state: address.uf || value.state,
+      }));
+      setCepFound(true);
+    } catch {
+      setCheckoutError("Não conseguimos buscar o CEP agora. Preencha o endereço manualmente.");
+    } finally {
+      setCepLoading(false);
+    }
   };
 
-  const copyDemoCode = useCallback(async () => {
+  const createPixPayment = async () => {
+    setCheckoutError("");
+    setPaymentLoading(true);
+    const trackingParams = new URLSearchParams();
+    const pageParams = new URLSearchParams(window.location.search);
+    for (const key of ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "src", "sck"]) {
+      const value = pageParams.get(key);
+      if (value) trackingParams.set(key, value);
+    }
     try {
-      await navigator.clipboard.writeText("DEMO-OLYMPIKUS-51-NAO-PAGAR");
-      setNotice("Código de demonstração copiado");
+      const response = await fetch(`/api/flevo/transaction${trackingParams.size ? `?${trackingParams.toString()}` : ""}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cart.map((item) => ({ productId: item.product.id, quantity: item.quantity, size: item.size, color: item.product.colorLabel })),
+          couponCode: couponWon ? "CORRE51" : "",
+          shipping,
+          customer: { name: form.name, email: form.email, document: form.cpf, phone: form.phone },
+          address: {
+            street: form.street,
+            number: form.number,
+            complement: form.complement,
+            neighborhood: form.neighborhood,
+            city: form.city,
+            state: form.state,
+            zipcode: cep,
+          },
+        }),
+      });
+      const result = await response.json() as PixPayment & { error?: string };
+      if (!response.ok) throw new Error(result.error || "Não foi possível gerar o Pix. Tente novamente.");
+      setPayment(result);
+      setPaymentStatus("pending");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
-      setNotice("Código fictício: DEMO-OLYMPIKUS-51-NAO-PAGAR");
+      setCheckoutError("Não foi possível gerar o Pix. Confira sua conexão e tente novamente.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const copyPixCode = useCallback(async () => {
+    if (!payment) return;
+    try {
+      await navigator.clipboard.writeText(payment.qrCode);
+      setNotice("Código Pix copiado");
+    } catch {
+      setNotice("Não foi possível copiar o código Pix");
     }
     window.setTimeout(() => setNotice(""), 3000);
-  }, []);
+  }, [payment]);
 
   return (
     <main className="site-shell">
-      <div className="demo-ribbon"><span>PRÉVIA DE DEMONSTRAÇÃO</span><i /> Loja conceitual • nenhum pagamento real é processado</div>
       <header className="site-header">
         <div className="container header-main">
           <button className="icon-button header-side" type="button" aria-label="Abrir menu" onClick={() => setMenuOpen(true)}><Menu size={23} /></button>
           <button className="logo-button" type="button" aria-label="Voltar para a loja" onClick={goToShop}><Brand /></button>
           <div className="header-actions">
-            <button className="icon-button" type="button" aria-label="Área da conta" onClick={() => setNotice("Prévia: área da conta indisponível")}><UserRound size={22} /></button>
+            <button className="icon-button" type="button" aria-label="Área da conta" onClick={() => setNotice("Área da conta em breve")}><UserRound size={22} /></button>
             <button className="icon-button cart-trigger" type="button" aria-label={`Sacola, ${totalItems} itens`} onClick={() => setCartOpen(true)}><ShoppingBag size={22} />{totalItems > 0 && <b className="cart-badge">{totalItems}</b>}</button>
           </div>
         </div>
         <div className="container search-row">
           <input aria-label="Buscar produtos" value={searchText} onFocus={() => setSearchOpen(true)} onChange={(event) => { setSearchText(event.target.value); setSearchOpen(true); }} placeholder="Buscar" />
-          <button type="button" aria-label="Buscar" onClick={() => setSearchOpen((open) => !open)}><Search size={21} /></button>
+          <button type="button" aria-label="Buscar" onClick={() => { if (searchText.trim()) trackTikTokEvent("Search", { query: searchText.trim().slice(0, 100) }); setSearchOpen((open) => !open); }}><Search size={21} /></button>
           {searchOpen && searchText && <div className="search-results">{searchResults.length ? searchResults.map((item) => <button key={item.id} type="button" onClick={() => openProduct(item)}><ProductVisual product={item} /><span>{item.name}<small>{brl(item.price)}</small></span><ChevronRight size={18} /></button>) : <p>Nenhum produto encontrado. Tente “Corre”.</p>}</div>}
         </div>
       </header>
@@ -549,7 +707,7 @@ export default function Home() {
         </div>
       ) : null}
 
-      {!selectedProduct && !(checkoutStep > 0 && cart.length > 0 && !cartOpen) && (
+      {!selectedProduct && !(checkoutStep > 0 && (cart.length > 0 || payment) && !cartOpen) && paymentStatus !== "approved" && (
         <div className="store-page">
           {!selectedProduct && <div className="container page-anchor" id="loja" />}
           <section className="hero-section">
@@ -563,7 +721,7 @@ export default function Home() {
           <section className="collection container" id="colecao">
             <div className="section-title-line"><h2>COLEÇÃO PROMOÇÃO 51 ANOS</h2><a href="#produtos">VER TODOS <ChevronRight size={15} /></a></div>
             <a className="collection-banner" href="#produtos"><img src="/olympikus/banner-para-cada-corrida.png" alt="Para cada corrida, um Corre. Descubra a coleção Olympikus." /></a>
-            {couponWon && <div className="coupon-banner"><Sparkles size={18} /><div><b>Seu cupom CORRE51 está ativo</b><span>85% OFF na coleção comemorativa desta demonstração</span></div><button type="button" onClick={() => { setCouponWon(false); setNotice("Cupom removido"); }}>Remover cupom</button></div>}
+            {couponWon && <div className="coupon-banner"><Sparkles size={18} /><div><b>Seu cupom CORRE51 está ativo</b><span>85% OFF na coleção comemorativa</span></div><button type="button" onClick={() => { setCouponWon(false); setCart((items) => items.map((item) => item.product.id.startsWith("upsell-") ? item : { ...item, product: { ...item.product, price: PRODUCTS.find((product) => product.id === item.product.id)?.price ?? item.product.price } })); setNotice("Cupom removido"); }}>Remover cupom</button></div>}
             <div className="product-section-heading" id="produtos"><div><span className="eyebrow">ESCOLHIDOS PARA VOCÊ</span><h2>Tênis Olympikus</h2></div><button className="filter-button" type="button" onClick={() => setNotice("Mostrando a coleção de aniversário")}><ChevronDown size={16} /> Filtrar</button></div>
             <div className="product-grid">{PRODUCTS.map((product) => {
               const isFavorite = favorites.includes(product.id);
@@ -589,23 +747,39 @@ export default function Home() {
 
       {menuOpen && <div className="drawer-backdrop" onClick={() => setMenuOpen(false)}><aside className="side-drawer menu-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><Brand /><button className="icon-button" type="button" aria-label="Fechar menu" onClick={() => setMenuOpen(false)}><X size={21} /></button></div><p>MENU</p>{["Novidades", "Feminino", "Masculino", "Corrida", "Treino", "Trilha", "Coleção 51 Anos"].map((label) => <button className="menu-link" key={label} type="button" onClick={() => { setMenuOpen(false); document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" }); }}>{label}<ChevronRight size={17} /></button>)}<div className="menu-promo"><span>51 ANOS</span><b>Viva o movimento</b><button type="button" onClick={() => setCampaignScreen("welcome")}>Descubra a campanha</button></div></aside></div>}
 
-      {cartOpen && <div className="drawer-backdrop" onClick={() => setCartOpen(false)}><aside className="side-drawer cart-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><h2>Sua sacola</h2><span>{totalItems} {totalItems === 1 ? "item" : "itens"}</span></div><button className="icon-button" type="button" aria-label="Fechar sacola" onClick={() => setCartOpen(false)}><X size={21} /></button></div>{cart.length === 0 ? <div className="empty-cart"><ShoppingBag size={33} /><h3>Sua sacola está vazia</h3><p>Descubra os modelos da coleção 51 anos.</p><button className="button button-black" type="button" onClick={() => setCartOpen(false)}>CONTINUAR COMPRANDO</button></div> : <><div className="cart-items">{cart.map((item) => <div className="cart-item" key={item.product.id + item.size}><ProductVisual product={item.product} /><div className="cart-item-info"><strong>{item.product.name}</strong><span>{item.product.colorLabel} · Tam. {item.size}</span><b>{brl(item.product.price)}</b><div className="quantity-stepper"><button type="button" aria-label="Diminuir quantidade" onClick={() => changeQuantity(item.product.id, item.size, -1)}><Minus size={14} /></button><span>{item.quantity}</span><button type="button" aria-label="Aumentar quantidade" onClick={() => changeQuantity(item.product.id, item.size, 1)}><Plus size={14} /></button></div></div></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><b>{brl(subtotal)}</b></div><div><span><Truck size={15} /> Frete</span><b className="muted">a calcular</b></div><div className="summary-total"><span>Total</span><b>{brl(subtotal)}</b></div><button className="button button-black button-full" type="button" onClick={launchCheckout}>FINALIZAR PEDIDO <ChevronRight size={17} /></button><p><LockKeyhole size={13} /> Fluxo de checkout demonstrativo</p></div></>}</aside></div>}
+      {cartOpen && <div className="drawer-backdrop" onClick={() => setCartOpen(false)}><aside className="side-drawer cart-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><div><h2>Sua sacola</h2><span>{totalItems} {totalItems === 1 ? "item" : "itens"}</span></div><button className="icon-button" type="button" aria-label="Fechar sacola" onClick={() => setCartOpen(false)}><X size={21} /></button></div>{cart.length === 0 ? <div className="empty-cart"><ShoppingBag size={33} /><h3>Sua sacola está vazia</h3><p>Descubra os modelos da coleção 51 anos.</p><button className="button button-black" type="button" onClick={() => setCartOpen(false)}>CONTINUAR COMPRANDO</button></div> : <><div className="cart-items">{cart.map((item) => <div className="cart-item" key={item.product.id + item.size}><ProductVisual product={item.product} /><div className="cart-item-info"><strong>{item.product.name}</strong><span>{item.product.colorLabel} · Tam. {item.size}</span><b>{brl(item.product.price)}</b><div className="quantity-stepper"><button type="button" aria-label="Diminuir quantidade" onClick={() => changeQuantity(item.product.id, item.size, -1)}><Minus size={14} /></button><span>{item.quantity}</span><button type="button" aria-label="Aumentar quantidade" onClick={() => changeQuantity(item.product.id, item.size, 1)}><Plus size={14} /></button></div></div></div>)}</div><div className="cart-summary"><div><span>Subtotal</span><b>{brl(subtotal)}</b></div><div><span><Truck size={15} /> Frete</span><b className="muted">a calcular</b></div><div className="summary-total"><span>Total</span><b>{brl(subtotal)}</b></div><button className="button button-black button-full" type="button" onClick={launchCheckout}>FINALIZAR PEDIDO <ChevronRight size={17} /></button><p><LockKeyhole size={13} /> Pagamento seguro via Pix</p></div></>}</aside></div>}
 
-      {checkoutStep > 0 && cart.length > 0 && !cartOpen && !selectedProduct && <section className="checkout-page">
-        <div className="checkout-secure"><LockKeyhole size={15} /> Prévia segura · pagamento desativado</div>
+      {checkoutStep > 0 && (cart.length > 0 || payment) && !cartOpen && !selectedProduct && paymentStatus !== "approved" && <section className="checkout-page">
+        <div className="checkout-secure"><LockKeyhole size={15} /> Pagamento seguro via Pix</div>
         <div className="checkout-container">
           <button className="back-link checkout-back" type="button" onClick={() => checkoutStep === 1 ? setCartOpen(true) : setCheckoutStep(checkoutStep - 1)}><ChevronLeft size={16} /> Voltar para {checkoutStep === 1 ? "a sacola" : checkoutStep === 2 ? "Identificação" : "Entrega"}</button>
           <div className="steps-indicator">{["Identificação", "Entrega", "Pagamento"].map((label, i) => <div className={`step-item ${checkoutStep === i + 1 ? "active" : ""} ${checkoutStep > i + 1 ? "complete" : ""}`} key={label}><span>{checkoutStep > i + 1 ? <Check size={15} /> : i + 1}</span><small>{label}</small></div>)}</div>
           <div className="checkout-layout">
             <div className="checkout-form-column">
-              <div className="demo-callout"><span>DEMONSTRAÇÃO</span><p>Este checkout é apenas ilustrativo. Nenhum dado será enviado ou armazenado.</p></div>
-              {checkoutStep === 1 && <section className="checkout-form"><h1>Quem vai receber?</h1><p className="form-intro">Só o essencial para começar.</p><label>Nome completo<input name="name" autoComplete="name" value={form.name} onChange={updateForm} placeholder="Seu nome completo" /></label><label>E-mail<input type="email" name="email" autoComplete="email" value={form.email} onChange={updateForm} placeholder="voce@email.com" /></label><div className="form-two-cols"><label>CPF<input name="cpf" inputMode="numeric" maxLength={14} value={form.cpf} onChange={updateForm} placeholder="000.000.000-00" /></label><label>Celular<input name="phone" inputMode="tel" maxLength={15} value={form.phone} onChange={updateForm} placeholder="(11) 98765-4321" /></label></div><p className="privacy-hint">No protótipo, seus dados ficam somente no seu navegador durante esta visita.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromIdentity}>CONTINUAR <ChevronRight size={17} /></button></section>}
-              {checkoutStep === 2 && <section className="checkout-form"><h1>Onde entregamos?</h1><p className="form-intro">Digite o CEP e complete o restante.</p><label>CEP<div className="cep-input"><input aria-label="CEP" inputMode="numeric" maxLength={9} value={cep} onChange={(event) => { setCep(event.currentTarget.value); setCepFound(false); }} placeholder="00000-000" /><button type="button" onClick={lookupCep}>Buscar CEP</button></div></label>{cepFound && <div className="cep-success"><Check size={15} /> Endereço de demonstração preenchido · São Paulo, SP</div>}<label>Rua / avenida<input name="street" value={form.street} onChange={updateForm} placeholder="Nome da rua" /></label><div className="form-two-cols"><label>Número<input name="number" value={form.number} onChange={updateForm} placeholder="Número" /></label><label>Complemento<input name="complement" value={form.complement} onChange={updateForm} placeholder="Apto, bloco" /></label></div><label>Bairro<input name="neighborhood" value={form.neighborhood} onChange={updateForm} placeholder="Bairro" /></label><div className="form-two-cols"><label>Cidade<input name="city" value={form.city} onChange={updateForm} placeholder="Cidade" /></label><label>UF<input name="state" maxLength={2} value={form.state} onChange={updateForm} placeholder="SP" /></label></div><fieldset className="shipping-options"><legend>ESCOLHA O FRETE</legend>{SHIPPING.map((option) => <label className={`shipping-option ${shipping === option.id ? "shipping-selected" : ""}`} key={option.id}><input type="radio" name="shipping" value={option.id} checked={shipping === option.id} onChange={() => chooseShipping(option.id)} /><span className="shipping-logo"><Truck size={19} /></span><span className="shipping-copy"><b>{option.title}</b><small>{option.detail}</small></span><strong>{option.price === 0 ? "Grátis" : brl(option.price)}</strong></label>)}</fieldset>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromDelivery}>CONTINUAR <ChevronRight size={17} /></button></section>}
-          {checkoutStep === 3 && !showPixDemo && <section className="checkout-form payment-step"><div className="upsell-heading"><Sparkles size={17} /><b>85% OFF ANTES DE PAGAR</b><span>{upsellIndex + 1}/9</span></div><div className="upsell-card"><button className="upsell-arrow" type="button" aria-label="Oferta anterior" onClick={() => setUpsellIndex((upsellIndex + 8) % 9)}><ChevronLeft size={19} /></button><OutfitVisual kind={currentUpsell.kind} /><div className="upsell-copy"><span>COLEÇÃO ASSINADA · ÚLTIMAS PEÇAS</span><strong>{currentUpsell.name}</strong><div><b>{brl(Math.round(currentUpsell.price * 0.15))}</b><del>{brl(currentUpsell.compareAt)}</del><i>-85%</i></div></div><button className="upsell-arrow" type="button" aria-label="Próxima oferta" onClick={() => setUpsellIndex((upsellIndex + 1) % 9)}><ChevronRight size={19} /></button><div className="upsell-size"><b>TAMANHO</b><div>{[33, 34, 35, 36, 37, 38, 39].map((size) => <button key={size} className={upsellSize === size ? "selected" : ""} type="button" onClick={() => setUpsellSize(size)}>{size}</button>)}</div></div><button className="button button-soft button-full" type="button" onClick={() => { const offer: Product = { id: `upsell-${upsellIndex}`, name: currentUpsell.name, price: Math.round(currentUpsell.price * 0.15), compareAt: currentUpsell.compareAt, color: "#2039cc", colorLabel: "Azul", category: "Coleção 51 Anos", index: 1, description: "Item demonstrativo da coleção de aniversário.", variants: [{ label: "Azul", color: "#2039cc", image: "" }], visualKind: currentUpsell.kind }; addToCart(offer, upsellSize, true); }}>+ ESCOLHA TAMANHO</button></div>{couponWon && <div className="applied-coupon"><Check size={15} /> Cupom CORRE51 selecionado nesta prévia</div>}<hr /><h1>Pagamento no Pix</h1><p className="form-intro">Ao confirmar, esta demonstração mostrará um QR fictício. Nenhuma cobrança será criada.</p><button className="button button-black button-full" type="button" onClick={() => setShowPixDemo(true)}>SIMULAR PAGAMENTO · {brl(total)} <ChevronRight size={17} /></button><p className="privacy-hint">Seus dados não são enviados para uma operadora de pagamento.</p></section>}
-              {checkoutStep === 3 && showPixDemo && <section className="pix-demo-card"><span className="eyebrow">VALOR A PAGAR · DEMONSTRAÇÃO</span><strong className="pix-total">{brl(total)}</strong><div className="fake-qr" aria-label="QR code fictício, não pagável">{Array.from({ length: 121 }, (_, i) => <i key={i} className={((i * 17 + Math.floor(i / 11) * 13 + 5) % 7) < 3 ? "qr-dark" : ""} />)}<b>DEMO</b></div><p className="pix-status"><span /> QR Code fictício. Não é possível realizar pagamento.</p><label className="pix-code-label">CÓDIGO DE DEMONSTRAÇÃO</label><code>DEMO-OLYMPIKUS-51-NAO-PAGAR</code><button className="button button-black button-full" type="button" onClick={copyDemoCode}><Copy size={16} /> COPIAR CÓDIGO FICTÍCIO</button><ol className="pix-instructions"><li>Esta tela não se conecta a um banco.</li><li>O código exibido não é um Pix válido.</li><li>Volte à loja para continuar avaliando o protótipo.</li></ol></section>}
+              {checkoutStep === 1 && <section className="checkout-form"><h1>Quem vai receber?</h1><p className="form-intro">Informe os dados para gerar o Pix e identificar seu pedido.</p><label>Nome completo<input name="name" autoComplete="name" value={form.name} onChange={updateForm} placeholder="Seu nome completo" /></label><label>E-mail<input type="email" name="email" autoComplete="email" value={form.email} onChange={updateForm} placeholder="voce@email.com" /></label><div className="form-two-cols"><label>CPF<input name="cpf" inputMode="numeric" maxLength={14} value={form.cpf} onChange={updateForm} placeholder="000.000.000-00" /></label><label>Celular<input name="phone" inputMode="tel" maxLength={15} value={form.phone} onChange={updateForm} placeholder="(11) 98765-4321" /></label></div><p className="privacy-hint">Seus dados são usados para processar o pagamento e a entrega do pedido.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromIdentity}>CONTINUAR <ChevronRight size={17} /></button></section>}
+              {checkoutStep === 2 && <section className="checkout-form"><h1>Onde entregamos?</h1><p className="form-intro">Digite o CEP e complete o endereço.</p><label>CEP<div className="cep-input"><input aria-label="CEP" inputMode="numeric" maxLength={9} value={cep} onChange={(event) => { setCep(event.currentTarget.value); setCepFound(false); }} placeholder="00000-000" /><button type="button" disabled={cepLoading} onClick={() => void lookupCep()}>{cepLoading ? "Buscando…" : "Buscar CEP"}</button></div></label>{cepFound && <div className="cep-success"><Check size={15} /> Endereço localizado</div>}<label>Rua / avenida<input name="street" value={form.street} onChange={updateForm} placeholder="Nome da rua" /></label><div className="form-two-cols"><label>Número<input name="number" value={form.number} onChange={updateForm} placeholder="Número" /></label><label>Complemento<input name="complement" value={form.complement} onChange={updateForm} placeholder="Apto, bloco" /></label></div><label>Bairro<input name="neighborhood" value={form.neighborhood} onChange={updateForm} placeholder="Bairro" /></label><div className="form-two-cols"><label>Cidade<input name="city" value={form.city} onChange={updateForm} placeholder="Cidade" /></label><label>UF<input name="state" maxLength={2} value={form.state} onChange={updateForm} placeholder="SP" /></label></div><fieldset className="shipping-options"><legend>ESCOLHA O FRETE</legend>{SHIPPING.map((option) => <label className={`shipping-option ${shipping === option.id ? "shipping-selected" : ""}`} key={option.id}><input type="radio" name="shipping" value={option.id} checked={shipping === option.id} onChange={() => chooseShipping(option.id)} /><span className="shipping-logo"><Truck size={19} /></span><span className="shipping-copy"><b>{option.title}</b><small>{option.detail}</small></span><strong>{option.price === 0 ? "Grátis" : brl(option.price)}</strong></label>)}</fieldset>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" onClick={nextFromDelivery}>CONTINUAR <ChevronRight size={17} /></button></section>}
+              {checkoutStep === 3 && !payment && <section className="checkout-form payment-step"><div className="upsell-heading"><Sparkles size={17} /><b>OFERTA EXCLUSIVA DA COLEÇÃO</b><span>{upsellIndex + 1}/9</span></div><div className="upsell-card"><button className="upsell-arrow" type="button" aria-label="Oferta anterior" onClick={() => setUpsellIndex((upsellIndex + 8) % 9)}><ChevronLeft size={19} /></button><OutfitVisual kind={currentUpsell.kind} /><div className="upsell-copy"><span>COLEÇÃO 51 ANOS</span><strong>{currentUpsell.name}</strong><div><b>{brl(Math.round(currentUpsell.price * 0.15))}</b><del>{brl(currentUpsell.compareAt)}</del><i>-85%</i></div></div><button className="upsell-arrow" type="button" aria-label="Próxima oferta" onClick={() => setUpsellIndex((upsellIndex + 1) % 9)}><ChevronRight size={19} /></button><div className="upsell-size"><b>TAMANHO</b><div>{[33, 34, 35, 36, 37, 38, 39].map((size) => <button key={size} className={upsellSize === size ? "selected" : ""} type="button" onClick={() => setUpsellSize(size)}>{size}</button>)}</div></div><button className="button button-soft button-full" type="button" onClick={() => { const offer: Product = { id: `upsell-${upsellIndex}`, name: currentUpsell.name, price: Math.round(currentUpsell.price * 0.15), compareAt: currentUpsell.compareAt, color: "#2039cc", colorLabel: "Azul", category: "Coleção 51 Anos", index: 1, description: currentUpsell.name, variants: [{ label: "Azul", color: "#2039cc", image: "" }], visualKind: currentUpsell.kind }; addToCart(offer, upsellSize, true); }}>+ ADICIONAR AO PEDIDO</button></div>{couponWon && <div className="applied-coupon"><Check size={15} /> Cupom CORRE51 aplicado</div>}<hr /><h1>Pagamento via Pix</h1><p className="form-intro">Gere o código Pix para pagar no aplicativo do seu banco.</p>{checkoutError && <p className="form-error">{checkoutError}</p>}<button className="button button-black button-full" type="button" disabled={paymentLoading} onClick={() => void createPixPayment()}>{paymentLoading ? "GERANDO PIX…" : `GERAR PIX · ${brl(total)}`} <ChevronRight size={17} /></button><p className="privacy-hint">A cobrança será criada somente após confirmar os dados e o valor do pedido.</p></section>}
+              {checkoutStep === 3 && payment && <section className="pix-payment-card"><span className="eyebrow">PAGUE COM PIX</span><strong className="pix-total">{brl(payment.amount)}</strong>{payment.qrCodeImage ? <img className="pix-qr-image" src={payment.qrCodeImage} alt="QR Code Pix do pedido" /> : <div className="pix-qr-unavailable">Use o código Pix copia e cola abaixo para concluir o pagamento.</div>}<p className={`pix-status ${paymentStatus === "failed" ? "pix-status-error" : ""}`}><span />{paymentStatus === "failed" ? "Este Pix expirou ou foi cancelado. Gere um novo código para tentar novamente." : "Aguardando a confirmação do pagamento…"}</p>{payment.expiresAt && <p className="pix-expiry">Válido até {payment.expiresAt}</p>}<label className="pix-code-label" htmlFor="pix-copy-code">CÓDIGO PIX · COPIA E COLA</label><textarea id="pix-copy-code" className="pix-code" readOnly value={payment.qrCode} /><button className="button button-black button-full" type="button" onClick={() => void copyPixCode()}><Copy size={16} /> COPIAR CÓDIGO PIX</button>{paymentStatus === "failed" && <button className="button button-outline button-full retry-pix" type="button" disabled={paymentLoading} onClick={() => void createPixPayment()}>{paymentLoading ? "GERANDO…" : "GERAR NOVO PIX"}</button>}<p className="privacy-hint">O pedido avança para preparação após a confirmação do pagamento.</p></section>}
             </div>
             <aside className="order-summary"><span className="eyebrow">RESUMO ({totalItems} {totalItems === 1 ? "ITEM" : "ITENS"})</span>{cart.map((item) => <div className="summary-item" key={item.product.id + item.size}><ProductVisual product={item.product} /><div><b>{item.product.name}</b><small>{item.product.colorLabel} · Tam. {item.size} · {item.quantity}x</small></div><strong>{brl(item.product.price * item.quantity)}</strong></div>)}<div className="summary-line"><span>Subtotal</span><b>{brl(subtotal)}</b></div><div className="summary-line"><span><Truck size={15} /> Frete</span><b className={shippingPrice === 0 ? "price-free" : ""}>{checkoutStep === 1 ? "a calcular" : shippingPrice === 0 ? "Grátis" : brl(shippingPrice)}</b></div><div className="summary-line summary-grand"><span>Total</span><strong>{brl(checkoutStep === 1 ? subtotal : total)}</strong></div></aside>
           </div>
+        </div>
+      </section>}
+
+      {paymentStatus === "approved" && payment && <section className="delivery-page">
+        <div className="delivery-card">
+          <span className="delivery-check"><Check size={30} /></span>
+          <span className="eyebrow">PAGAMENTO CONFIRMADO</span>
+          <h1>Sua entrega está em andamento</h1>
+          <p className="delivery-intro">Seu pedido foi aprovado e segue para preparação antes do envio.</p>
+          <div className="delivery-order"><span>NÚMERO DO PEDIDO</span><strong>{payment.reference}</strong></div>
+          <ol className="delivery-timeline">
+            <li className="delivery-complete"><span><Check size={14} /></span><div><b>Pagamento confirmado</b><small>Pix aprovado</small></div></li>
+            <li className="delivery-current"><span>2</span><div><b>Pedido em preparação</b><small>Separação para envio</small></div></li>
+            <li><span>3</span><div><b>Em transporte</b><small>Rastreio disponível após a postagem</small></div></li>
+            <li><span>4</span><div><b>Entregue</b><small>Aproveite seu novo Olympikus</small></div></li>
+          </ol>
+          <button className="button button-black button-full" type="button" onClick={() => { setPayment(null); setPaymentStatus(null); setCheckoutStep(0); setCart([]); window.scrollTo({ top: 0, behavior: "smooth" }); }}>CONTINUAR COMPRANDO</button>
         </div>
       </section>}
 
@@ -616,11 +790,11 @@ export default function Home() {
           <div><h3>Institucional</h3><a href="#sobre">Sobre nós</a><a href="#lojas">Nossas lojas</a><a href="#trabalhe">Trabalhe conosco</a><a href="#sustentabilidade">Sustentabilidade</a></div>
           <div><h3>Ajuda</h3><a href="#ajuda">Central de Ajuda</a><a href="#trocas">Trocas e Devoluções</a><a href="#pedido">Rastrear Pedido</a><a href="#pagamento">Formas de Pagamento</a></div>
         </div>
-        <div className="footer-warning"><div className="container"><strong>ESTA É UMA PRÉVIA DE DEMONSTRAÇÃO</strong><p>Os preços, descontos, produtos e condições desta página são ilustrativos. Nenhum pedido ou pagamento real será processado.</p><hr /><small>Copyright 2026 OLYMPIKUS · Protótipo conceitual para avaliação visual.</small><div><a href="#privacidade">Política de Privacidade</a><a href="#termos">Termos de Uso</a></div></div></div>
+        <div className="footer-warning"><div className="container"><small>© 2026 Olympikus · Viva o movimento.</small><div><a href="#privacidade">Política de Privacidade</a><a href="#termos">Termos de Uso</a></div></div></div>
       </footer>
 
       {notice && <div className="toast" role="status"><Check size={16} />{notice}</div>}
-      <GameModal key={campaignScreen ?? "closed"} screen={campaignScreen} onClose={dismissCampaign} onStart={() => setCampaignScreen("game1")} onRetry={() => setCampaignScreen("game2")} onWin={() => { setCouponWon(true); dismissCampaign(); document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" }); }} />
+      <GameModal key={campaignScreen ?? "closed"} screen={campaignScreen} onClose={dismissCampaign} onStart={() => setCampaignScreen("game1")} onRetry={() => setCampaignScreen("game2")} onWin={() => { setCouponWon(true); setCart((items) => items.map((item) => item.product.id.startsWith("upsell-") ? item : { ...item, product: { ...item.product, price: Math.round((PRODUCTS.find((product) => product.id === item.product.id)?.price ?? item.product.price) * 0.15) } })); dismissCampaign(); document.getElementById("produtos")?.scrollIntoView({ behavior: "smooth" }); }} />
     </main>
   );
 }

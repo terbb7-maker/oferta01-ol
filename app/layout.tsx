@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { TikTokPixel } from "@/components/tiktok-pixel";
 
 export const metadata: Metadata = {
-  title: "Olympikus · Celebração 51 anos (demonstração)",
-  description: "Protótipo navegável da experiência de comemoração de 51 anos da Olympikus. Demonstração sem vendas ou pagamentos reais.",
+  title: "Olympikus · Viva o movimento",
+  description: "Tênis Olympikus para corrida, treino e movimento todos os dias.",
   other: {
     "codex-preview": "development",
   },
@@ -19,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body className="antialiased">{children}</body>
+  <html lang="pt-BR">
+      <body className="antialiased"><TikTokPixel />{children}</body>
     </html>
   );
 }
