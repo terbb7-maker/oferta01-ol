@@ -51,79 +51,97 @@ type CartItem = {
   quantity: number;
 };
 
+const makeProduct = (
+  id: string,
+  name: string,
+  price: number,
+  compareAt: number,
+  category: string,
+  description: string,
+  variants: Product["variants"],
+): Product => ({
+  id,
+  name,
+  price,
+  compareAt,
+  color: variants[0].color,
+  colorLabel: variants[0].label,
+  category,
+  index: 0,
+  description,
+  variants,
+});
+
 const PRODUCTS: Product[] = [
-  {
-    id: "core-pace",
-    name: "Corre Pace",
-    price: 16990,
-    compareAt: 19990,
-    color: "#f5f2e9",
-    colorLabel: "Branco / Azul",
-    category: "Corrida",
-    index: 0,
-    description:
-      "Um parceiro leve para acompanhar seu ritmo. O cabedal em mesh favorece a ventilação, enquanto a entressola macia traz conforto para a rotina de treinos.",
-    variants: [
-      { label: "Branco / Azul", color: "#f5f2e9", image: "tenis-corre-pace.webp" },
-      { label: "Azul Marinho", color: "#193c89", image: "corre-nuvem/azul-marinho.webp" },
-      { label: "Off-white / Preto", color: "#d8d2c5", image: "corre-nuvem/off-white-preto.webp" },
-      { label: "Preto", color: "#202126", image: "corre-nuvem/preto-total.webp" },
-    ],
-  },
-  {
-    id: "core-4",
-    name: "Corre 4 50 Anos",
-    price: 18990,
-    compareAt: 23990,
-    color: "#172d4d",
-    colorLabel: "Marinho / Areia",
-    category: "Corrida",
-    index: 1,
-    description:
-      "Edição comemorativa com visual marcante, ajuste confortável e sola pensada para o asfalto e para os treinos do dia a dia.",
-    variants: [
-      { label: "Marinho / Areia · 50 anos", color: "#172d4d", image: "corre-4-50-anos-azul.webp" },
-      { label: "Off-white", color: "#eee9dc", image: "corre-4/off-white.webp" },
-      { label: "Preto", color: "#242426", image: "corre-4/preto-total.webp" },
-      { label: "Cinza / Oliva", color: "#8a8c7e", image: "corre-4/cinza-oliva.webp" },
-    ],
-  },
-  {
-    id: "supra-2",
-    name: "Corre Supra 2",
-    price: 23990,
-    compareAt: 27990,
-    color: "#303236",
-    colorLabel: "Preto / Grafite",
-    category: "Performance",
-    index: 2,
-    description:
-      "Amortecimento confortável e construção respirável em um tênis versátil para corridas, academia e movimento urbano.",
-    variants: [
-      { label: "Preto / Grafite", color: "#303236", image: "supra-2.webp" },
-      { label: "Azul / Lima", color: "#2a64bb", image: "supra-2/azul-lima.webp" },
-      { label: "Preto / Lima", color: "#23272c", image: "supra-2/preto-lima.webp" },
-      { label: "Creme / Lima", color: "#d9d5c6", image: "supra-2/creme-lima.webp" },
-    ],
-  },
-  {
-    id: "trilha-2",
-    name: "Corre Trilha 2",
-    price: 20990,
-    compareAt: 24990,
-    color: "#788064",
-    colorLabel: "Areia / Oliva",
-    category: "Trilha",
-    index: 3,
-    description:
-      "Aderência e conforto para explorar novos caminhos. Um desenho de sola com mais presença para acompanhar você fora do asfalto.",
-    variants: [
-      { label: "Areia / Oliva", color: "#788064", image: "tenis-corre-trilha-2.webp" },
-      { label: "Azul Petróleo", color: "#275469", image: "corre-trilha-2/azul-petroleo.webp" },
-      { label: "Oliva / Preto", color: "#555b43", image: "corre-trilha-2/oliva-preto.webp" },
-      { label: "Preto", color: "#242426", image: "corre-trilha-2/preto-total.webp" },
-    ],
-  },
+  makeProduct("core-pace", "Corre Pace", 18490, 19990, "Corrida", "Um parceiro leve para acompanhar seu ritmo, com cabedal respirável e conforto para os treinos do dia a dia.", [
+    { label: "Branco / Azul", color: "#f5f2e9", image: "tenis-corre-pace.webp" },
+  ]),
+  makeProduct("core-4", "Corre 4 50 Anos", 8190, 23990, "Corrida", "Edição comemorativa de 50 anos com visual marcante, ajuste confortável e sola para acompanhar sua rotina.", [
+    { label: "Marinho / Areia · 50 anos", color: "#172d4d", image: "corre-4-50-anos-azul.webp" },
+    { label: "Off-white", color: "#eee9dc", image: "corre-4/off-white.webp" },
+    { label: "Preto / Creme", color: "#242426", image: "corre-4/preto-creme.webp" },
+    { label: "Cinza / Oliva", color: "#8a8c7e", image: "corre-4/cinza-oliva.webp" },
+  ]),
+  makeProduct("supra-2", "Corre Supra 2", 15190, 27990, "Performance", "Amortecimento confortável e construção respirável para corridas, academia e movimento urbano.", [
+    { label: "Preto / Grafite", color: "#303236", image: "supra-2.webp" },
+    { label: "Azul / Lima", color: "#2a64bb", image: "supra-2/azul-lima.webp" },
+    { label: "Preto / Lima", color: "#23272c", image: "supra-2/preto-lima.webp" },
+    { label: "Creme / Lima", color: "#d9d5c6", image: "supra-2/creme-lima.webp" },
+  ]),
+  makeProduct("trilha-2", "Corre Trilha 2", 8190, 24990, "Trilha", "Aderência e conforto para explorar novos caminhos, com sola preparada para acompanhar você fora do asfalto.", [
+    { label: "Areia / Oliva", color: "#788064", image: "tenis-corre-trilha-2.webp" },
+    { label: "Azul Petróleo", color: "#275469", image: "corre-trilha-2/azul-petroleo.webp" },
+    { label: "Oliva / Preto", color: "#555b43", image: "corre-trilha-2/oliva-preto.webp" },
+    { label: "Preto", color: "#242426", image: "corre-trilha-2/preto-total.webp" },
+  ]),
+  makeProduct("grafeno-3", "Corre Grafeno 3", 10190, 29990, "Performance", "Um modelo de corrida com design dinâmico e diferentes combinações de cores para os seus treinos.", [
+    { label: "Grafite / Branco", color: "#4a4e50", image: "grafeno-3.webp" },
+    { label: "Azul / Turquesa", color: "#2088a1", image: "grafeno-3/azul-turquesa.webp" },
+    { label: "Limão / Preto", color: "#a1bd24", image: "grafeno-3/limao-preto.webp" },
+    { label: "Roxo / Preto", color: "#5b4a7a", image: "grafeno-3/roxo-preto.webp" },
+  ]),
+  makeProduct("corre-max", "Corre Max", 7590, 22990, "Corrida", "Conforto para seguir em movimento, em um visual versátil para seus treinos e para o dia a dia.", [
+    { label: "Preto / Carvão", color: "#292b2d", image: "corre-max/preto-carvao.webp" },
+    { label: "Branco Gelo", color: "#ecebe7", image: "corre-max/branco-gelo.webp" },
+    { label: "Verde Oliva", color: "#747a50", image: "corre-max/verde-oliva.webp" },
+    { label: "Areia / Turquesa", color: "#c8b49b", image: "corre-max/areia-turquesa.webp" },
+  ]),
+  makeProduct("corre-5", "Corre 5", 8190, 22990, "Corrida", "Leve e confortável para acompanhar diferentes ritmos, do treino diário à sua próxima corrida.", [
+    { label: "Branco", color: "#f1eee8", image: "corre-5-branco.webp" },
+    { label: "Preto / Neon", color: "#292b2d", image: "corre-5-preto-neon.webp" },
+    { label: "Cinza / Bege", color: "#a7a49b", image: "corre-5/cinza-bege.webp" },
+    { label: "Verde Oliva", color: "#747a50", image: "corre-5/verde-oliva.webp" },
+  ]),
+  makeProduct("corre-vento-3", "Corre Vento 3", 6990, 19990, "Corrida", "Um tênis leve com opções de cores vibrantes para colocar mais movimento nos seus quilômetros.", [
+    { label: "Azul", color: "#2453a6", image: "corre-vento-3-azul.webp" },
+    { label: "Bege", color: "#d4c8ab", image: "corre-vento-3-bege.webp" },
+    { label: "Branco", color: "#f1eee8", image: "corre-vento-3-branco.webp" },
+    { label: "Laranja", color: "#e97722", image: "corre-vento-3-laranja.webp" },
+  ]),
+  makeProduct("corre-trilha-3", "Corre Trilha 3", 8190, 22990, "Trilha", "Feito para explorar caminhos com conforto e firmeza em diferentes terrenos.", [
+    { label: "Bege", color: "#cfc2a7", image: "corre-trilha-3-bege.webp" },
+    { label: "Preto", color: "#242426", image: "corre-trilha-3-preto.webp" },
+    { label: "Amarelo / Petróleo", color: "#c3a726", image: "corre-trilha-3/amarelo-petroleo.webp" },
+    { label: "Oliva / Areia", color: "#777a55", image: "corre-trilha-3/oliva-areia.webp" },
+  ]),
+  makeProduct("corre-max-2", "Corre Max 2", 8190, 22990, "Corrida", "Amortecimento macio e combinações atuais para os seus treinos e caminhadas.", [
+    { label: "Bege / Oliva", color: "#b9aa8c", image: "corre-max-2/bege-oliva.webp" },
+    { label: "Creme / Bege", color: "#d4cbbb", image: "corre-max-2/creme-bege.webp" },
+    { label: "Lilás", color: "#a58cb5", image: "corre-max-2/lilas.webp" },
+    { label: "Preto", color: "#242426", image: "corre-max-2/preto.webp" },
+  ]),
+  makeProduct("corre-turbo", "Corre Turbo", 9190, 24990, "Performance", "Design esportivo e visual marcante para manter você em movimento.", [
+    { label: "Azul Royal", color: "#254ab0", image: "corre-turbo/azul-royal.webp" },
+    { label: "Preto / Lima", color: "#292b2d", image: "corre-turbo/preto-limao.webp" },
+    { label: "Creme / Coral", color: "#d8cdbc", image: "corre-turbo/creme-coral-menta.webp" },
+    { label: "Areia / Azul Royal", color: "#c8b49b", image: "corre-turbo/areia-azul-royal.webp" },
+  ]),
+  makeProduct("corre-nuvem", "Corre Nuvem", 6190, 16990, "Corrida", "Leveza e suavidade para caminhar, treinar e curtir cada passo do seu dia.", [
+    { label: "Azul Marinho", color: "#193c89", image: "corre-nuvem/azul-marinho.webp" },
+    { label: "Azul Claro", color: "#84a9dc", image: "corre-nuvem/azul-claro.webp" },
+    { label: "Areia / Coral", color: "#d1b9a2", image: "corre-nuvem/areia-coral.webp" },
+    { label: "Preto / Creme", color: "#292b2d", image: "corre-nuvem/preto-creme.webp" },
+  ]),
 ];
 
 const UPSELLS = [
@@ -515,7 +533,7 @@ export default function Home() {
                 <span className="eyebrow">TÊNIS OLYMPIKUS</span>
                 <h1>{selectedProduct.name}</h1>
                 <div className="rating-row"><span className="stars"><Star /><Star /><Star /><Star /><Star /></span><span>(187)</span><span className="muted">Ref. 432046_3-030</span></div>
-                <div className="detail-price"><strong>{brl(couponWon ? Math.round(selectedProduct.price * 0.15) : selectedProduct.price)}</strong><del>{brl(selectedProduct.compareAt)}</del><b>-{couponWon ? "85" : "15"}%</b></div>
+                <div className="detail-price"><strong>{brl(couponWon ? Math.round(selectedProduct.price * 0.15) : selectedProduct.price)}</strong><del>{brl(selectedProduct.compareAt)}</del><b>-{couponWon ? "85" : Math.round((1 - selectedProduct.price / selectedProduct.compareAt) * 100)}%</b></div>
                 <div className="selling-points"><span><i className="green-dot" /> Lançamento</span><span><i className="orange-dot" /> 10% off no Pix</span></div>
                 {couponWon && <div className="coupon-applied"><Sparkles size={17} /> Cupom CORRE51 aplicado · 85% OFF</div>}
                 <div className="detail-spacer"><Heart size={22} /></div>
