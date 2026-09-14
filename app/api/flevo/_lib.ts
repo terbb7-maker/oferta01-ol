@@ -8,17 +8,17 @@ export type JsonObject = Record<string, unknown>;
 
 export const PRODUCTS: Record<string, { name: string; price: number }> = {
   "core-pace": { name: "Corre Pace", price: 18490 },
-  "core-4": { name: "Corre 4 50 Anos", price: 8190 },
-  "supra-2": { name: "Corre Supra 2", price: 15190 },
-  "trilha-2": { name: "Corre Trilha 2", price: 8190 },
-  "grafeno-3": { name: "Corre Grafeno 3", price: 10190 },
-  "corre-max": { name: "Corre Max", price: 7590 },
-  "corre-5": { name: "Corre 5", price: 8190 },
-  "corre-vento-3": { name: "Corre Vento 3", price: 6990 },
-  "corre-trilha-3": { name: "Corre Trilha 3", price: 8190 },
-  "corre-max-2": { name: "Corre Max 2", price: 8190 },
-  "corre-turbo": { name: "Corre Turbo", price: 9190 },
-  "corre-nuvem": { name: "Corre Nuvem", price: 6190 },
+  "core-4": { name: "Corre 4 50 Anos", price: 5990 },
+  "supra-2": { name: "Corre Supra 2", price: 12990 },
+  "trilha-2": { name: "Corre Trilha 2", price: 5990 },
+  "grafeno-3": { name: "Corre Grafeno 3", price: 7990 },
+  "corre-max": { name: "Corre Max", price: 5490 },
+  "corre-5": { name: "Corre 5", price: 5990 },
+  "corre-vento-3": { name: "Corre Vento 3", price: 4990 },
+  "corre-trilha-3": { name: "Corre Trilha 3", price: 5990 },
+  "corre-max-2": { name: "Corre Max 2", price: 5990 },
+  "corre-turbo": { name: "Corre Turbo", price: 6990 },
+  "corre-nuvem": { name: "Corre Nuvem", price: 3990 },
 };
 
 const UPSELLS = [
