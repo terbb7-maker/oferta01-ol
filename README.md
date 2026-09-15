@@ -8,6 +8,7 @@ Antes do primeiro deploy, cadastre em **Vercel → Project Settings → Environm
 
 - `FLEVOPAY_SECRET_KEY`: chave secreta da conta FlevoPay.
 - `TIKTOK_ACCESS_TOKEN`: token da Events API do TikTok.
+- `ADMIN_LOGIN`, `ADMIN_PASSWORD` e `ADMIN_SESSION_SECRET`: credenciais e segredo da sessão do painel `/admin` (os padrões são `TB` e `777`; defina um segredo próprio em produção).
 
 Não coloque os valores privados no código ou em arquivos versionados. O ID da loja FlevoPay (`10529`) e o ID do Pixel (`DAK3TN3C77UDHLL41DAG`) já são os valores padrão. Os nomes das variáveis estão em `vercel.env.example`.
 
