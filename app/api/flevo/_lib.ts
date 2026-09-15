@@ -160,7 +160,6 @@ export function getCheckoutItems(
       }
     }
     if (!product) return null;
-    if (coupon && !id.startsWith("upsell-")) unitPrice = Math.round(unitPrice * 0.15);
     total += unitPrice * quantity;
     items.push({ id, name: product.name, size, quantity, unitPrice, color: cleanText(row.color, 36) });
   }
