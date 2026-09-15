@@ -700,14 +700,14 @@ export default function Home() {
                 <span className="eyebrow">TÊNIS OLYMPIKUS</span>
                 <h1>{selectedProduct.name}</h1>
                 <div className="rating-row"><span className="stars"><Star /><Star /><Star /><Star /><Star /></span><span>(187)</span><span className="muted">Ref. 432046_3-030</span></div>
-                <div className="detail-price"><strong>{brl(couponWon ? Math.round(selectedProduct.price * 0.15) : selectedProduct.price)}</strong><del>{brl(selectedProduct.compareAt)}</del><b>-{couponWon ? "85" : Math.round((1 - selectedProduct.price / selectedProduct.compareAt) * 100)}%</b></div>
+                <div className="detail-price"><strong>{brl(selectedProduct.price)}</strong><del>{brl(selectedProduct.compareAt)}</del><b>-{Math.round((1 - selectedProduct.price / selectedProduct.compareAt) * 100)}%</b></div>
                 <div className="selling-points"><span><i className="green-dot" /> Lançamento</span><span><i className="orange-dot" /> 10% off no Pix</span></div>
                 {couponWon && <div className="coupon-applied"><Sparkles size={17} /> Cupom CORRE51 aplicado · 85% OFF</div>}
                 <div className="detail-spacer"><Heart size={22} /></div>
                 <div className="option-block"><div className="option-title"><b>COR</b><span>{selectedProduct.variants[selectedColor]?.label ?? selectedProduct.colorLabel}</span></div><div className="color-options">{selectedProduct.variants.map((variant, i) => <button type="button" key={variant.image} className={selectedColor === i ? "color-selected" : ""} aria-label={variant.label} title={variant.label} style={{ background: variant.color }} onClick={() => setSelectedColor(i)} />)}</div></div>
                 <div className="option-block"><div className="option-title"><b>NUMERAÇÃO</b><button type="button" className="size-guide">Guia de tamanho</button></div><div className="size-grid">{[33, 34, 35, 36, 37, 38, 39, 40, 41, 42].map((size) => <button key={size} type="button" className={selectedSize === size ? "size-selected" : ""} onClick={() => setSelectedSize(size)}>{size}</button>)}</div></div>
                 <div className="cep-check"><label htmlFor="product-cep">CALCULAR FRETE</label><div><input id="product-cep" placeholder="00000-000" inputMode="numeric" maxLength={9} /><button type="button" onClick={() => setNotice("Frete grátis disponível para todo o Brasil")}>Calcular</button></div></div>
-                <button className="button button-black button-full" type="button" onClick={() => { const variant = selectedProduct.variants[selectedColor] ?? selectedProduct.variants[0]; addToCart({ ...selectedProduct, color: variant.color, colorLabel: variant.label, variants: [variant] }, selectedSize); }}>COMPRAR · {brl(couponWon ? Math.round(selectedProduct.price * 0.15) : selectedProduct.price)}</button>
+                <button className="button button-black button-full" type="button" onClick={() => { const variant = selectedProduct.variants[selectedColor] ?? selectedProduct.variants[0]; addToCart({ ...selectedProduct, color: variant.color, colorLabel: variant.label, variants: [variant] }, selectedSize); }}>COMPRAR · {brl(selectedProduct.price)}</button>
                 <button className="button button-outline button-full add-bag" type="button" onClick={() => { const variant = selectedProduct.variants[selectedColor] ?? selectedProduct.variants[0]; addToCart({ ...selectedProduct, color: variant.color, colorLabel: variant.label, variants: [variant] }, selectedSize); }}>ADICIONAR À SACOLA</button>
               </section>
             </div>
@@ -734,13 +734,12 @@ export default function Home() {
             <div className="product-section-heading" id="produtos"><div><span className="eyebrow">ESCOLHIDOS PARA VOCÊ</span><h2>Tênis Olympikus</h2></div><button className="filter-button" type="button" onClick={() => setNotice("Mostrando a coleção de aniversário")}><ChevronDown size={16} /> Filtrar</button></div>
             <div className="product-grid">{PRODUCTS.map((product) => {
               const isFavorite = favorites.includes(product.id);
-              const shownPrice = couponWon ? Math.round(product.price * 0.15) : product.price;
+              const shownPrice = product.price;
               return <article className="product-card" key={product.id}>
                 <div className="product-card-image" onClick={() => openProduct(product)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === "Enter") openProduct(product); }}>
                   <ProductVisual product={product} />
                   <span className="product-tag">LANÇAMENTO</span>
                   <button className={`favorite-button ${isFavorite ? "is-favorite" : ""}`} type="button" aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} onClick={(event) => { event.stopPropagation(); toggleFavorite(product.id); }}><Heart size={18} fill={isFavorite ? "currentColor" : "none"} /></button>
-                  {couponWon && <span className="sale-tag">85% OFF</span>}
                 </div>
                 <button className="product-title-button" type="button" onClick={() => openProduct(product)}><span className="eyebrow">TÊNIS OLYMPIKUS</span><strong>{product.name}</strong></button>
                 <div className="product-meta"><span><i className="orange-dot" /> Lançamento</span><span><i className="green-dot" /> 10% off no Pix</span></div>
